@@ -56,7 +56,8 @@ export const emailRouter = createTRPCRouter({
     )
     .mutation(async ({ input }) => {
       try {
-        const email = await handleInboundEmail(input as InboundParseData);
+        const email = input;
+        // const email = await handleInboundEmail(input as InboundParseData);
         return { success: true, email };
       } catch (error) {
         console.error('Error processing inbound email:', error);
