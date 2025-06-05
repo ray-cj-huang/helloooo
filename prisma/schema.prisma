@@ -19,3 +19,19 @@ model Post {
 
     @@index([name])
 }
+
+model Email {
+    id        String   @id @default(cuid())
+    name      String
+    email     String
+    subject   String
+    text      String
+    date      DateTime @default(now())
+    read      Boolean  @default(false)
+    labels    String[]
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([email])
+    @@index([date])
+}
