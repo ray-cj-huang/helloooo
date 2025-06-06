@@ -11,27 +11,29 @@ datasource db {
     directUrl = env("DIRECT_URL")
 }
 
-model Post {
-    id        Int      @id @default(autoincrement())
-    name      String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    @@index([name])
+enum EmailStatus {
+    INBOX    // For inbound emails
+    TRASH    // For deleted emails
+    JUNK     // For spam/junk emails
+    DRAFT    // For outbound emails being composed
+    ARCHIVE  // For archived emails
+    SENT     // For outbound emails that have been sent
 }
 
 model Email {
-    id        String   @id @default(cuid())
+    id        String      @id @default(cuid())
     name      String
     email     String
     subject   String
     text      String
-    date      DateTime @default(now())
-    read      Boolean  @default(false)
+    status    EmailStatus @default(INBOX)
+    date      DateTime    @default(now())
+    read      Boolean     @default(false)
     labels    String[]
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    createdAt DateTime    @default(now())
+    updatedAt DateTime    @updatedAt
 
     @@index([email])
     @@index([date])
+    @@index([status])
 }

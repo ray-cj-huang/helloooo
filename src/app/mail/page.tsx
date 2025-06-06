@@ -3,9 +3,7 @@ import Image from "next/image"
 
 import { Mail } from "./_components/mail"
 import { mailLayoutSchema, mailCollapsedSchema } from "@/lib/schemas/mail"
-// import { getEmails } from "@/lib/sendgrid"
-import { accounts, mails } from './data';
-
+import { MailProvider } from "./_components/mail-provider"
 
 export default async function MailPage() {
   const cookieStore = await cookies()
@@ -15,30 +13,10 @@ export default async function MailPage() {
   const defaultLayout = layout ? mailLayoutSchema.parse(JSON.parse(layout.value)) : undefined
   const defaultCollapsed = collapsed ? mailCollapsedSchema.parse(JSON.parse(collapsed.value)) : undefined
 
-  // const mails = await getEmails()
-
   return (
     <>
-      <div className="md:hidden">
-        <Image
-          src="/examples/mail-dark.png"
-          width={1280}
-          height={727}
-          alt="Mail"
-          className="hidden dark:block"
-        />
-        <Image
-          src="/examples/mail-light.png"
-          width={1280}
-          height={727}
-          alt="Mail"
-          className="block dark:hidden"
-        />
-      </div>
-      <div className="hidden flex-col md:flex">
-        <Mail
-          accounts={accounts}
-          mails={mails}
+      <div className="hidden flex-col md:flex h-screen mid-w-screen">
+        <MailProvider
           defaultLayout={defaultLayout}
           defaultCollapsed={defaultCollapsed}
           navCollapsedSize={4}

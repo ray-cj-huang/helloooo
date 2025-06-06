@@ -2,9 +2,9 @@
 
 import { sendEmail } from '@/lib/sendgrid'
 
-export async function sendEmailAction(to: string, subject: string, text: string) {
+export async function sendEmailAction(to: string, subject: string, text: string, from?: string) {
   try {
-    const success = await sendEmail(to, subject, text)
+    const success = await sendEmail(to, subject, text, from)
     if (!success) {
       throw new Error('Failed to send email')
     }

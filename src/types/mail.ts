@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react"
+import { type EmailStatus } from "@prisma/client"
 
 export interface Mail {
   id: string
@@ -30,4 +31,12 @@ export interface MailProps {
   defaultLayout: number[] | undefined
   defaultCollapsed?: boolean
   navCollapsedSize: number
+  onStatusChange?: (id: string, status: EmailStatus) => void
+  onReadToggle?: (id: string, read: boolean) => void
+  onLabelsUpdate?: (id: string, labels: string[]) => void
+  onDelete?: (id: string) => void
+  onSearch?: (search: string) => void
+  onLabelsFilter?: (labels: string[]) => void
+  onStatusFilter?: (status: EmailStatus) => void
+  isLoading?: boolean
 } 

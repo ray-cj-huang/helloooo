@@ -2,62 +2,36 @@ import * as React from "react"
 import { type Mail } from "@/types/mail"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
+import { api } from "@/trpc/react"
 import { sendEmailAction } from "@/app/actions/send-email"
+import { MailCompose } from "./mail-compose"
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable"
 
 interface MailDisplayProps {
   mail: Mail | null
+  onReadToggle?: (id: string, read: boolean) => void
 }
 
-interface AutoResponseResponse {
-  response: string;
-}
-
-export function MailDisplay({ mail }: MailDisplayProps) {
-  const [isGenerating, setIsGenerating] = React.useState(false)
+export function MailDisplay({ mail, onReadToggle }: MailDisplayProps) {
   const [error, setError] = React.useState<string | null>(null)
+  const hasMarkedAsRead = React.useRef(false)
 
-  const handleAutoResponse = async () => {
-    if (!mail) return
-
-    setIsGenerating(true)
-    setError(null)
-
-    try {
-      // Generate response using Together AI
-      const response = await fetch('/api/auto-response', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: mail.email,
-          subject: mail.subject,
-          text: mail.text,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to generate response')
-      }
-
-      const data = await response.json() as AutoResponseResponse
-      
-      // Send the email using server action
-      const result = await sendEmailAction(
-        mail.email,
-        `Re: ${mail.subject}`,
-        data.response
-      )
-
-      if (!result.success) {
-        throw new Error(result.error ?? 'Failed to send email')
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-    } finally {
-      setIsGenerating(false)
+  // Mark as read when email is first displayed
+  React.useEffect(() => {
+    if (mail && !mail.read && onReadToggle && !hasMarkedAsRead.current) {
+      hasMarkedAsRead.current = true
+      onReadToggle(mail.id, true)
     }
-  }
+  }, [mail?.id]) // Only depend on mail.id to prevent unnecessary updates
+
+  // Reset the ref when mail changes
+  React.useEffect(() => {
+    hasMarkedAsRead.current = false
+  }, [mail?.id])
 
   if (!mail) {
     return (
@@ -79,21 +53,6 @@ export function MailDisplay({ mail }: MailDisplayProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            onClick={handleAutoResponse}
-            disabled={isGenerating}
-            variant="outline"
-            size="sm"
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              'Auto Response'
-            )}
-          </Button>
           <div className="text-sm text-muted-foreground">
             {new Date(mail.date).toLocaleString()}
           </div>
@@ -104,13 +63,21 @@ export function MailDisplay({ mail }: MailDisplayProps) {
           {error}
         </div>
       )}
-      <div className="flex-1 overflow-auto p-4">
-        <div className="prose prose-sm max-w-none">
-          {mail.text.split("\n").map((line, i) => (
-            <p key={i}>{line}</p>
-          ))}
-        </div>
-      </div>
+      <ResizablePanelGroup direction="vertical" className="flex-1">
+        <ResizablePanel defaultSize={60}>
+          <div className="flex-1 overflow-auto p-4">
+            <div className="prose prose-sm max-w-none">
+              {mail.text.split("\n").map((line, i) => (
+                <p key={i}>{line}</p>
+              ))}
+            </div>
+          </div>
+        </ResizablePanel>
+        <ResizableHandle withHandle />
+        <ResizablePanel defaultSize={40}>
+          <MailCompose to={mail.email} subject={mail.subject} />
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </div>
   )
 } 

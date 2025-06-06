@@ -13,6 +13,7 @@ import {
   ShoppingCart,
   Trash2,
   Users2,
+  Loader2,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -30,6 +31,14 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { type EmailStatus } from "@prisma/client"
 
 import { AccountSwitcher } from "./account-switcher"
 import { MailDisplay } from "./mail-display"
@@ -37,17 +46,120 @@ import { MailList } from "./mail-list"
 import { Nav } from "./nav"
 
 import { useMailStore } from "@/store/mail"
-import { type MailProps } from "@/types/mail"
+import { type MailProps, type MailNavItem } from "@/types/mail"
+
+import { MailCompose } from "./mail-compose"
 
 export function Mail({
   accounts,
   mails,
-  defaultLayout = [20, 32, 48],
+  defaultLayout = [20, 40, 40],
   defaultCollapsed = false,
   navCollapsedSize,
+  onStatusChange,
+  onReadToggle,
+  onLabelsUpdate,
+  onDelete,
+  onSearch,
+  onLabelsFilter,
+  onStatusFilter,
+  isLoading,
 }: MailProps) {
   const [isCollapsed, setIsCollapsed] = React.useState(defaultCollapsed)
   const selected = useMailStore((state) => state.selected)
+  const selectedStatus = useMailStore((state) => state.selectedStatus)
+  const setSelectedStatus = useMailStore((state) => state.setSelectedStatus)
+  const [searchQuery, setSearchQuery] = React.useState("")
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setSearchQuery(value)
+    onSearch?.(value)
+  }
+
+  const handleStatusChange = (status: EmailStatus) => {
+    if (selected && onStatusChange) {
+      onStatusChange(selected, status)
+    }
+  }
+
+  const handleReadToggle = () => {
+    if (selected && onReadToggle) {
+      const mail = mails.find((m) => m.id === selected)
+      if (mail) {
+        onReadToggle(selected, !mail.read)
+      }
+    }
+  }
+
+  const handleDelete = () => {
+    if (selected && onDelete) {
+      onDelete(selected)
+    }
+  }
+
+  const navItems: (MailNavItem & { onClick?: () => void })[] = [
+    {
+      title: "Inbox",
+      label: selectedStatus === "INBOX" ? mails.filter((m) => !m.read).length.toString() : "",
+      icon: Inbox,
+      variant: selectedStatus === "INBOX" ? "default" : "ghost",
+      onClick: () => {
+        setSelectedStatus("INBOX")
+        onStatusFilter?.("INBOX")
+      },
+    },
+    {
+      title: "Drafts",
+      label: selectedStatus === "DRAFT" ? mails.filter((m) => !m.read).length.toString() : "",
+      icon: File,
+      variant: selectedStatus === "DRAFT" ? "default" : "ghost",
+      onClick: () => {
+        setSelectedStatus("DRAFT")
+        onStatusFilter?.("DRAFT")
+      },
+    },
+    {
+      title: "Sent",
+      label: selectedStatus === "SENT" ? mails.filter((m) => !m.read).length.toString() : "",
+      icon: Send,
+      variant: selectedStatus === "SENT" ? "default" : "ghost",
+      onClick: () => {
+        setSelectedStatus("SENT")
+        onStatusFilter?.("SENT")
+      },
+    },
+    {
+      title: "Junk",
+      label: selectedStatus === "JUNK" ? mails.filter((m) => !m.read).length.toString() : "",
+      icon: ArchiveX,
+      variant: selectedStatus === "JUNK" ? "default" : "ghost",
+      onClick: () => {
+        setSelectedStatus("JUNK")
+        onStatusFilter?.("JUNK")
+      },
+    },
+    {
+      title: "Trash",
+      label: selectedStatus === "TRASH" ? mails.filter((m) => !m.read).length.toString() : "",
+      icon: Trash2,
+      variant: selectedStatus === "TRASH" ? "default" : "ghost",
+      onClick: () => {
+        setSelectedStatus("TRASH")
+        onStatusFilter?.("TRASH")
+      },
+    },
+    {
+      title: "Archive",
+      label: selectedStatus === "ARCHIVE" ? mails.filter((m) => !m.read).length.toString() : "",
+      icon: Archive,
+      variant: selectedStatus === "ARCHIVE" ? "default" : "ghost",
+      onClick: () => {
+        setSelectedStatus("ARCHIVE")
+        onStatusFilter?.("ARCHIVE")
+      },
+    },
+  ]
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -94,80 +206,7 @@ export function Mail({
           <Separator />
           <Nav
             isCollapsed={isCollapsed}
-            links={[
-              {
-                title: "Inbox",
-                label: "128",
-                icon: Inbox,
-                variant: "default",
-              },
-              {
-                title: "Drafts",
-                label: "9",
-                icon: File,
-                variant: "ghost",
-              },
-              {
-                title: "Sent",
-                label: "",
-                icon: Send,
-                variant: "ghost",
-              },
-              {
-                title: "Junk",
-                label: "23",
-                icon: ArchiveX,
-                variant: "ghost",
-              },
-              {
-                title: "Trash",
-                label: "",
-                icon: Trash2,
-                variant: "ghost",
-              },
-              {
-                title: "Archive",
-                label: "",
-                icon: Archive,
-                variant: "ghost",
-              },
-            ]}
-          />
-          <Separator />
-          <Nav
-            isCollapsed={isCollapsed}
-            links={[
-              {
-                title: "Social",
-                label: "972",
-                icon: Users2,
-                variant: "ghost",
-              },
-              {
-                title: "Updates",
-                label: "342",
-                icon: AlertCircle,
-                variant: "ghost",
-              },
-              {
-                title: "Forums",
-                label: "128",
-                icon: MessagesSquare,
-                variant: "ghost",
-              },
-              {
-                title: "Shopping",
-                label: "8",
-                icon: ShoppingCart,
-                variant: "ghost",
-              },
-              {
-                title: "Promotions",
-                label: "21",
-                icon: Archive,
-                variant: "ghost",
-              },
-            ]}
+            links={navItems}
           />
         </ResizablePanel>
         <ResizableHandle withHandle />
@@ -195,23 +234,83 @@ export function Mail({
               <form>
                 <div className="relative">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="Search" className="pl-8" />
+                  <Input 
+                    placeholder="Search" 
+                    className="pl-8" 
+                    value={searchQuery}
+                    onChange={handleSearch}
+                  />
                 </div>
               </form>
             </div>
             <TabsContent value="all" className="m-0">
-              <MailList items={mails} />
+              {isLoading ? (
+                <div className="flex h-[200px] items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : (
+                <MailList items={mails} />
+              )}
             </TabsContent>
             <TabsContent value="unread" className="m-0">
-              <MailList items={mails.filter((item) => !item.read)} />
+              {isLoading ? (
+                <div className="flex h-[200px] items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : (
+                <MailList items={mails.filter((item) => !item.read)} />
+              )}
             </TabsContent>
           </Tabs>
         </ResizablePanel>
         <ResizableHandle withHandle />
         <ResizablePanel defaultSize={defaultLayout[2]} minSize={30}>
-          <MailDisplay
-            mail={mails.find((item) => item.id === selected) ?? null}
-          />
+          <ResizablePanelGroup direction="vertical">
+            <ResizablePanel defaultSize={60}>
+              {selected && (
+                <div className="flex h-[52px] items-center justify-between border-b px-4">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleReadToggle}
+                    >
+                      Mark as {mails.find((m) => m.id === selected)?.read ? "unread" : "read"}
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          Move to
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => handleStatusChange("INBOX")}>
+                          Inbox
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange("ARCHIVE")}>
+                          Archive
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange("TRASH")}>
+                          Trash
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleDelete}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              )}
+              <MailDisplay
+                mail={mails.find((item) => item.id === selected) ?? null}
+                onReadToggle={onReadToggle}
+              />
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </ResizablePanel>
       </ResizablePanelGroup>
     </TooltipProvider>
